@@ -1,0 +1,351 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>減排計算器（折扣零售）</title>
+  <style>
+    :root {
+      --bg: #f6f8fb;
+      --card: #ffffff;
+      --text: #1f2937;
+      --muted: #6b7280;
+      --accent: #2563eb;
+      --good: #16a34a;
+      --warn: #f59e0b;
+      --border: #e5e7eb;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", system-ui, sans-serif;
+      color: var(--text);
+      background: var(--bg);
+    }
+    header {
+      padding: 28px 20px 10px;
+      text-align: center;
+    }
+    header h1 { margin: 0 0 8px; font-size: 24px; }
+    header p { margin: 0; color: var(--muted); }
+
+    .wrap { max-width: 1100px; margin: 0 auto; padding: 16px; }
+    .grid {
+      display: grid;
+      grid-template-columns: 1.2fr 0.8fr;
+      gap: 16px;
+    }
+    @media (max-width: 900px) {
+      .grid { grid-template-columns: 1fr; }
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    }
+
+    .card h2 { margin: 0 0 12px; font-size: 18px; }
+    .help { color: var(--muted); font-size: 13px; margin-bottom: 12px; }
+
+    .section { margin-bottom: 14px; }
+    .section h3 { font-size: 14px; margin: 0 0 8px; color: #111827; }
+
+    .fields {
+      display: grid;
+      grid-template-columns: 1fr 130px;
+      gap: 8px 12px;
+      align-items: center;
+    }
+
+    label { font-size: 14px; color: #111827; }
+    .unit { color: var(--muted); font-size: 12px; margin-left: 6px; }
+
+    input[type="number"] {
+      width: 100%;
+      padding: 8px 10px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 14px;
+    }
+
+    .note { font-size: 12px; color: var(--muted); margin-top: 4px; }
+
+    .actions { display: flex; gap: 8px; margin-top: 8px; }
+    button {
+      border: 1px solid var(--border);
+      background: #fff;
+      border-radius: 8px;
+      padding: 8px 12px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+    button.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+    .results {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    .result-card {
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px;
+      background: #fafafa;
+    }
+    .result-card h4 { margin: 0 0 6px; font-size: 13px; color: var(--muted); }
+    .result-card .value { font-size: 20px; font-weight: 600; }
+    .result-card .unit { font-size: 12px; color: var(--muted); }
+
+    .big {
+      grid-column: span 2;
+      background: #f0fdf4;
+      border-color: #bbf7d0;
+    }
+    .big .value { color: var(--good); font-size: 26px; }
+
+    .warn {
+      color: #b45309;
+      font-size: 13px;
+      margin-top: 8px;
+      display: none;
+    }
+
+    details {
+      margin-top: 10px;
+    }
+    details summary {
+      cursor: pointer;
+      font-size: 14px;
+      color: var(--accent);
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 8px;
+      font-size: 13px;
+    }
+    th, td { border: 1px solid var(--border); padding: 6px 8px; text-align: left; }
+    th { background: #f9fafb; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>折扣零售碳減排計算器</h1>
+    <p>填入參數，即時計算年度淨減排（kg / t CO₂e）</p>
+  </header>
+
+  <div class="wrap">
+    <div class="grid">
+      <section class="card">
+        <h2>輸入參數</h2>
+        <p class="help">說明：比例類參數請輸入 0–1（如 90% 請輸入 0.9）。</p>
+
+        <div class="section">
+          <h3>商品與減排因子</h3>
+          <div class="fields">
+            <label for="mf">食品質量 m<sub>f</sub> <span class="unit">kg</span></label>
+            <input id="mf" type="number" step="1" min="0" value="50000" />
+
+            <label for="mn">非食品質量 m<sub>n</sub> <span class="unit">kg</span></label>
+            <input id="mn" type="number" step="1" min="0" value="10000" />
+
+            <label for="alpha">廢棄物轉移率 &alpha; <span class="unit">0–1</span></label>
+            <input id="alpha" type="number" step="0.01" min="0" max="1" value="0.9" />
+
+            <label for="ef">食品減排因子 &epsilon;<sub>f</sub> <span class="unit">kg CO₂e/kg</span></label>
+            <input id="ef" type="number" step="0.01" min="0" value="2.7" />
+
+            <label for="en">非食品減排因子 &epsilon;<sub>n</sub> <span class="unit">kg CO₂e/kg</span></label>
+            <input id="en" type="number" step="0.01" min="0" value="3.0" />
+          </div>
+        </div>
+
+        <div class="section">
+          <h3>運輸</h3>
+          <div class="fields">
+            <label for="d">運輸距離 d <span class="unit">km/次</span></label>
+            <input id="d" type="number" step="1" min="0" value="50" />
+
+            <label for="n">運輸次數 n <span class="unit">次/年</span></label>
+            <input id="n" type="number" step="1" min="0" value="20" />
+
+            <label for="fvan">貨車排放因子 f<sub>van</sub> <span class="unit">kg CO₂e/km</span></label>
+            <input id="fvan" type="number" step="0.01" min="0" value="0.2" />
+
+            <label for="pe">歐洲進口比例 p<sub>e</sub> <span class="unit">0–1</span></label>
+            <input id="pe" type="number" step="0.01" min="0" max="1" value="0.10" />
+
+            <label for="pa">東南亞進口比例 p<sub>a</sub> <span class="unit">0–1</span></label>
+            <input id="pa" type="number" step="0.01" min="0" max="1" value="0.30" />
+
+            <label for="taue">歐洲進口因子 &tau;<sub>e</sub> <span class="unit">kg CO₂e/kg</span></label>
+            <input id="taue" type="number" step="0.01" min="0" value="0.8" />
+
+            <label for="taua">東南亞進口因子 &tau;<sub>a</sub> <span class="unit">kg CO₂e/kg</span></label>
+            <input id="taua" type="number" step="0.01" min="0" value="0.4" />
+          </div>
+        </div>
+
+        <div class="section">
+          <h3>倉儲與取貨</h3>
+          <div class="fields">
+            <label for="delta">倉儲因子 &delta; <span class="unit">kg CO₂e/kg·月</span></label>
+            <input id="delta" type="number" step="0.001" min="0" value="0.05" />
+
+            <label for="ts">倉儲時間 t<sub>s</sub> <span class="unit">月</span></label>
+            <input id="ts" type="number" step="0.1" min="0" value="1" />
+
+            <label for="dc">取貨距離 d<sub>c</sub> <span class="unit">km</span></label>
+            <input id="dc" type="number" step="0.1" min="0" value="1" />
+
+            <label for="fc">取貨因子 f<sub>c</sub> <span class="unit">kg CO₂e/km</span></label>
+            <input id="fc" type="number" step="0.01" min="0" value="0.05" />
+
+            <label for="mp">單次購買質量 m<sub>p</sub> <span class="unit">kg/次</span></label>
+            <input id="mp" type="number" step="0.1" min="0.1" value="5" />
+          </div>
+        </div>
+
+        <div class="actions">
+          <button class="primary" id="calcBtn">立即計算</button>
+          <button id="resetBtn">重置預設</button>
+        </div>
+        <div class="warn" id="warn">請檢查輸入：所有值需為非負，比例需介於 0–1。</div>
+      </section>
+
+      <section class="card">
+        <h2>計算結果</h2>
+        <div class="results">
+          <div class="result-card">
+            <h4>避免排放 E<sub>avoid</sub></h4>
+            <div class="value" id="Eavoid">0</div>
+            <div class="unit">kg CO₂e</div>
+          </div>
+          <div class="result-card">
+            <h4>新增排放 E<sub>added</sub></h4>
+            <div class="value" id="Eadded">0</div>
+            <div class="unit">kg CO₂e</div>
+          </div>
+          <div class="result-card">
+            <h4>運輸排放 E<sub>trans</sub></h4>
+            <div class="value" id="Etrans">0</div>
+            <div class="unit">kg CO₂e</div>
+          </div>
+          <div class="result-card">
+            <h4>倉儲排放 E<sub>store</sub></h4>
+            <div class="value" id="Estore">0</div>
+            <div class="unit">kg CO₂e</div>
+          </div>
+          <div class="result-card">
+            <h4>取貨排放 E<sub>cust</sub></h4>
+            <div class="value" id="Ecust">0</div>
+            <div class="unit">kg CO₂e</div>
+          </div>
+          <div class="result-card big">
+            <h4>淨減排 R<sub>net</sub></h4>
+            <div class="value" id="Rnet">0</div>
+            <div class="unit">kg CO₂e / 年</div>
+          </div>
+          <div class="result-card big">
+            <h4>淨減排（噸）</h4>
+            <div class="value" id="RnetT">0</div>
+            <div class="unit">t CO₂e / 年</div>
+          </div>
+        </div>
+
+        <details>
+          <summary>查看公式明細</summary>
+          <table>
+            <tr><th>公式</th><th>說明</th></tr>
+            <tr><td>E<sub>avoid</sub> = &alpha;( &epsilon;<sub>f</sub> m<sub>f</sub> + &epsilon;<sub>n</sub> m<sub>n</sub> )</td><td>避免排放</td></tr>
+            <tr><td>E<sub>trans</sub> = n·d·f<sub>van</sub> + p<sub>e</sub>·M·&tau;<sub>e</sub> + p<sub>a</sub>·M·&tau;<sub>a</sub></td><td>運輸排放</td></tr>
+            <tr><td>E<sub>store</sub> = &delta;·t<sub>s</sub>·m<sub>f</sub></td><td>倉儲排放</td></tr>
+            <tr><td>E<sub>cust</sub> = (d<sub>c</sub>·f<sub>c</sub>/m<sub>p</sub>)·(m<sub>f</sub>+m<sub>n</sub>)</td><td>取貨排放</td></tr>
+            <tr><td>R<sub>net</sub> = E<sub>avoid</sub> − (E<sub>trans</sub>+E<sub>store</sub>+E<sub>cust</sub>)</td><td>淨減排</td></tr>
+          </table>
+        </details>
+      </section>
+    </div>
+  </div>
+
+  <script>
+    const defaults = {
+      mf: 50000, mn: 10000, alpha: 0.9, ef: 2.7, en: 3.0,
+      d: 50, n: 20, fvan: 0.2, pe: 0.10, pa: 0.30, taue: 0.8, taua: 0.4,
+      delta: 0.05, ts: 1, dc: 1, fc: 0.05, mp: 5
+    };
+
+    const ids = Object.keys(defaults);
+
+    function readInputs() {
+      const data = {};
+      for (const id of ids) {
+        const v = parseFloat(document.getElementById(id).value);
+        data[id] = isNaN(v) ? 0 : v;
+      }
+      return data;
+    }
+
+    function validate(d) {
+      if (d.alpha < 0 || d.alpha > 1) return false;
+      if (d.pe < 0 || d.pe > 1) return false;
+      if (d.pa < 0 || d.pa > 1) return false;
+      for (const k of ids) {
+        if (d[k] < 0) return false;
+      }
+      if (d.mp <= 0) return false;
+      return true;
+    }
+
+    function fmt(x) {
+      return x.toLocaleString('en-US', { maximumFractionDigits: 2 });
+    }
+
+    function compute() {
+      const d = readInputs();
+      const ok = validate(d);
+      document.getElementById('warn').style.display = ok ? 'none' : 'block';
+      if (!ok) return;
+
+      const M = d.mf + d.mn;
+      const Eavoid = d.alpha * (d.ef * d.mf + d.en * d.mn);
+      const EtransLocal = d.n * d.d * d.fvan;
+      const EtransImport = d.pe * M * d.taue + d.pa * M * d.taua;
+      const Etrans = EtransLocal + EtransImport;
+      const Estore = d.delta * d.ts * d.mf;
+      const Ecust = (d.dc * d.fc / d.mp) * (d.mf + d.mn);
+      const Eadded = Etrans + Estore + Ecust;
+      const Rnet = Eavoid - Eadded;
+      const RnetT = Rnet / 1000;
+
+      document.getElementById('Eavoid').textContent = fmt(Eavoid);
+      document.getElementById('Etrans').textContent = fmt(Etrans);
+      document.getElementById('Estore').textContent = fmt(Estore);
+      document.getElementById('Ecust').textContent = fmt(Ecust);
+      document.getElementById('Eadded').textContent = fmt(Eadded);
+      document.getElementById('Rnet').textContent = fmt(Rnet);
+      document.getElementById('RnetT').textContent = fmt(RnetT);
+    }
+
+    function resetDefaults() {
+      for (const id of ids) {
+        document.getElementById(id).value = defaults[id];
+      }
+      compute();
+    }
+
+    document.getElementById('calcBtn').addEventListener('click', compute);
+    document.getElementById('resetBtn').addEventListener('click', resetDefaults);
+
+    // auto-calc on input change
+    ids.forEach(id => {
+      document.getElementById(id).addEventListener('input', compute);
+    });
+
+    compute();
+  </script>
+</body>
+</html>
